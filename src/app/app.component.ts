@@ -2,9 +2,11 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  template: `<game-board></game-board>`
 })
 export class AppComponent {
   title = 'ng-grid-2d';
+
+ 
+
 }

@@ -1,0 +1,29 @@
+canvas {
+  border-style: solid;
+  border-radius: 5px;
+  border-width: 2px;
+  border-color: #369;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 520px 120px;
+  grid-template-rows: auto;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.my-button {
+  padding: .5rem 1.5rem;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+ }
+ 
+ .my-button:hover {
+   color: white;
+   background-color: #42545C;
+ }
