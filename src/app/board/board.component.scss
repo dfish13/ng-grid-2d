@@ -7,7 +7,7 @@ canvas {
 
 .grid {
   display: grid;
-  grid-template-columns: 520px 120px;
+  grid-template-columns: 620px 120px;
   grid-template-rows: auto;
 }
 
@@ -21,9 +21,13 @@ canvas {
   padding: .5rem 1.5rem;
   font-size: 1rem;
   margin-bottom: 2rem;
- }
- 
- .my-button:hover {
-   color: white;
-   background-color: #42545C;
- }
+}
+
+// Using not modifier and disable attr selector to make sure disabled buttons do not
+// Change color when hovered over.
+.my-button:not([disabled]) {
+  &:hover {
+    color: white;
+    background-color: #42545C;
+  }
+}
