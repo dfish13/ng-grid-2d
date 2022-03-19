@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { fromEvent } from 'rxjs';
 
 
@@ -21,16 +21,15 @@ export class BoardComponent implements OnInit {
 
   @ViewChild('canvas', {static: true}) canvas: ElementRef;
   ctx: CanvasRenderingContext2D;
-  tileSize: number = 6;
-  gridSize: number = 100;
+  tileSize: number = 2;
+  gridSize: number = 300;
   liveTiles: Tile[];
   tiles: number[][];
   stepNum: number;
   interval: Interval;
   stepTime: number;
   highlightedTiles: number[][];
-  toolTip: { x: number, y: number };
-  iTool: number;
+  toolTip: ToolTip;
   toolTipOffsets: number[][];
   
   ngOnInit(): void {
@@ -43,21 +42,28 @@ export class BoardComponent implements OnInit {
     this.ctx.canvas.height = this.gridSize * this.tileSize;
     this.ctx.fillStyle = '#444';
     this.stepNum = 0;
-    this.stepTime = 10;
+    this.stepTime = 5;
     this.liveTiles = [];
     this.tiles = new Array(this.gridSize).fill(0).map(() => Array(this.gridSize).fill(0))
     this.highlightedTiles = []
-    this.toolTip = {
-      x: -1,
-      y: -1
-    }
-    this.iTool = 0
+    this.toolTip = new ToolTip()
     this.interval = new Interval(this.step.bind(this), this.stepTime)
     this.captureEvents(this.ctx.canvas)
   }
 
-  cycleTooltip() {
-    this.iTool = (this.iTool + 1) % toolTipOptions.length
+  
+  @HostListener('window:keydown', ['$event'])
+  keyEvent(event: KeyboardEvent) {
+    const funcs = {
+      ' ': this.toolTip.reflect.bind(this.toolTip),
+      'w': this.toolTip.next.bind(this.toolTip),
+      's': this.toolTip.prev.bind(this.toolTip),
+      'd': this.toolTip.rotate.bind(this.toolTip)
+    }
+    if (funcs[event.key]) {
+      funcs[event.key]()
+      this.drawHighlight(this.toolTip.x, this.toolTip.y)
+    }
   }
 
   clearHighlight() {
@@ -71,6 +77,20 @@ export class BoardComponent implements OnInit {
     this.highlightedTiles = []
   }
 
+  drawHighlight(i: number, j: number) {
+    this.clearHighlight()
+    this.ctx.fillStyle = "#369"
+    for (var o of this.toolTip.getArr()) {
+      const a = i - o[0]
+      const b = j - o[1]
+      if (a >= 0 && a < this.gridSize && b >= 0 && b < this.gridSize) {
+        this.ctx.fillRect(a * this.tileSize, b * this.tileSize, this.tileSize, this.tileSize)
+        this.highlightedTiles.push([a, b])
+      }
+    }
+    this.ctx.fillStyle = "#444"
+  }
+
   canvasCoords(e: MouseEvent) {
       const rect = this.ctx.canvas.getBoundingClientRect()
       const clamp = (num: number, min: number, max: number) => Math.max(min, Math.min(max, Math.floor(num)))
@@ -82,7 +102,7 @@ export class BoardComponent implements OnInit {
   captureEvents(canvasEl: HTMLCanvasElement) {
     fromEvent(this.ctx.canvas, 'click').subscribe((e: MouseEvent) => {
       const [i, j] = this.canvasCoords(e)
-      for (var o of toolTipOptions[this.iTool]) {
+      for (var o of this.toolTip.getArr()) {
         const a = i - o[0]
         const b = j - o[1]
         if (!(a >= 0 && a < this.gridSize && b >= 0 && b < this.gridSize))
@@ -104,21 +124,15 @@ export class BoardComponent implements OnInit {
       const [i, j] = this.canvasCoords(e)
       if (this.toolTip.x == i && this.toolTip.y == j)
         return
-      this.clearHighlight()
-      this.ctx.fillStyle = "#369"
-      for (var o of toolTipOptions[this.iTool]) {
-        const a = i - o[0]
-        const b = j - o[1]
-        if (a >= 0 && a < this.gridSize && b >= 0 && b < this.gridSize) {
-          this.ctx.fillRect(a * this.tileSize, b * this.tileSize, this.tileSize, this.tileSize)
-          this.highlightedTiles.push([a, b])
-        }
-      }
-      this.ctx.fillStyle = "#444"
+      this.toolTip.x = i;
+      this.toolTip.y = j;
+      this.drawHighlight(i, j)
     })
 
     fromEvent(canvasEl, 'mouseleave').subscribe(() => {
       this.clearHighlight()
+      this.toolTip.x = -1;
+      this.toolTip.y = -1;
     })
   }
 
@@ -205,30 +219,96 @@ export class BoardComponent implements OnInit {
   logTiles() {
     let left = Number.MAX_SAFE_INTEGER
     let top = Number.MAX_SAFE_INTEGER
+    let right = Number.MIN_SAFE_INTEGER
+    let bottom = Number.MIN_SAFE_INTEGER
     for (var t of this.liveTiles)
     {
       left = Math.min(left, t.i)
       top = Math.min(top, t.j)
+      right = Math.max(right, t.i)
+      bottom = Math.max(bottom, t.j)
     }
 
     let tiles = []
+    console.log([right - left + 1, bottom - top + 1])
     for (var t of this.liveTiles)
       tiles.push([t.i - left, t.j - top])
     console.log(JSON.stringify(tiles))
   }
 
-  gun() {
-    const GospersGun = [[0,4],[0,5],[1,5],[1,4],[10,4],[10,5],[10,6],[11,3],[11,7],[12,2],[12,8],[13,2],[13,8],[14,5],[15,3],[15,7],[16,6],[16,5],[16,4],[17,5],[20,4],[21,4],[20,3],[21,3],[20,2],[21,2],[22,1],[22,5],[24,5],[24,6],[24,0],[24,1],[34,2],[35,2],[35,3],[34,3]]
-    const top = 1
-    const left = 1
-    for (var c of GospersGun) {
-      if (this.tiles[left + c[0]][top + c[1]] == 0)
-        this.liveTiles.push(new Tile(left + c[0], top + c[1], this.tileSize))
-      this.tiles[left + c[0]][top + c[1]] = 1
+}
+
+class ToolTip {
+
+  private static readonly defaultOptions = [
+    {
+      d: [1, 1],
+      arr: [[0, 0]]
+    },
+    {
+      d: [3, 3],
+      arr: [[2,0],[2,1],[2,2],[1,2],[0,1]]
+    },
+    {
+      d: [4, 4],
+      arr: [[0,0],[0,1],[0,2],[1,2],[1,1],[1,0],[2,0],[2,1],[2,2],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3]]
+    },
+    {
+      d: [36, 9],
+      arr: [[0,4],[0,5],[1,5],[1,4],[10,4],[10,5],[10,6],[11,3],[11,7],[12,2],[12,8],[13,2],[13,8],[14,5],[15,3],[15,7],[16,6],[16,5],[16,4],[17,5],[20,4],[21,4],[20,3],[21,3],[20,2],[21,2],[22,1],[22,5],[24,5],[24,6],[24,0],[24,1],[34,2],[35,2],[35,3],[34,3]]
+    },
+    {
+      d: [4, 6],
+      arr: [[2,3],[1,4],[2,2],[0,4],[2,0],[2,1],[2,4],[0,3],[1,0],[1,1],[1,2],[1,5],[3,1],[3,2],[3,3]]
     }
-    this.draw()
+  ]
+
+  options: {d: number[], arr: number[][]}[];
+  x: number;
+  y: number;
+  i: number;
+
+  constructor() {
+    this.init()
   }
 
+  private init() {
+    this.i = 0;
+    this.x = -1;
+    this.y = -1;
+    this.options = []
+    for (var o of ToolTip.defaultOptions)
+      this.options.push(o)
+  }
+
+  next() {
+    this.i = (this.i + 1) % this.options.length
+  }
+
+  prev() {
+    this.i = (this.i + this.options.length - 1) % this.options.length
+  }
+
+  getArr() {
+    return this.options[this.i].arr
+  }
+
+  rotate() {
+    const [w, h] = this.options[this.i].d
+    var newArr = []
+    for (var o of this.options[this.i].arr)
+      newArr.push([-o[1] + h, o[0]])
+    this.options[this.i].arr = newArr
+    this.options[this.i].d = [h, w]
+  }
+
+  reflect() {
+    const [w, h] = this.options[this.i].d
+    var newArr = []
+    for (var o of this.options[this.i].arr)
+      newArr.push([w - (o[0] + 1), o[1]])
+    this.options[this.i].arr = newArr
+  }
 }
 
 class Interval {
