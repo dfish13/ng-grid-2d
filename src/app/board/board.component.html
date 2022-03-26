@@ -1,12 +1,66 @@
-<h1>Conway's Game of Life</h1>
+
 <div class="grid">
-  <canvas #canvas class="game-board"></canvas>
+  <div>
+    <h1>Game of Life Simulator</h1>
+    <canvas #canvas class="game-board"></canvas>
+    <h3>How to use</h3>
+    <p>
+      Use the <b>WASD</b> keys to modify the tooltip.
+      <b>W</b> and <b>S</b> to cycle back and forth through the options.
+      <b>D</b> allows you to rotate the tooltip by 90 degrees.
+      <b>A</b> reflects the tooltip horizontally.
+    </p>
+    <p>
+      Click <b>Save</b> to save the current game state as a new tooltip option.
+      <b>Delete</b> will remove the currently selected tooltip.
+      <b>Step</b> moves the simulation forward by one iteration.
+    </p>
+  </div>
   <div class="right-column">
-    <h2>Step: {{stepNum}}</h2>
-    <button (click)="toggle()" class="my-button">{{interval.isRunning() ? "Pause" : "Play"}}</button>
-    <button (click)="step()" [disabled]="interval.isRunning()" class="my-button">Step</button>
-    <button (click)="reset()" [disabled]="interval.isRunning()" class="my-button">Reset</button>
-    <button (click)="logTiles()" class="my-button">Log</button>
+    <h2>Steps: {{stepNum}}</h2>
+    <div>
+      <label id="slider-label">Frequency (steps/second)</label>
+      <mat-slider
+        thumbLabel
+        min="1"
+        max="200"
+        step="1"
+        value="100"
+        [displayWith]="formatLabel"
+        (input)="onSliderValueChange($event)"
+        aria-labelledby="slider-label"
+      >
+      </mat-slider>
+    </div>
+    <div class="mat-button-base">
+      <button mat-stroked-button color="primary" (click)="toggle()">{{interval.isRunning() ? "Pause" : "Play"}}</button>
+      <button mat-stroked-button color="primary" (click)="step()" [disabled]="interval.isRunning()">Step</button>
+      <button mat-stroked-button color="primary" (click)="reset()" [disabled]="interval.isRunning()">Reset</button>
+      <button mat-stroked-button color="primary" (click)="saveTooltip()">Save</button>
+      <button mat-stroked-button color="primary" (click)="deleteTooltip()">Delete</button>
+
+    </div>
+    <label id="radio-group-label"><h3>Choose grid size</h3></label>
+    <mat-radio-group
+      aria-label="Select an option"
+      aria-labelledby="radio-group-label"
+      class="radio-group-base"
+      (change)="onGridSizeChange($event)"
+    >
+      <mat-radio-button value="50">50</mat-radio-button>
+      <mat-radio-button checked="true" value="100">100</mat-radio-button>
+      <mat-radio-button value="200">200</mat-radio-button>
+      <mat-radio-button value="300">300</mat-radio-button>
+    </mat-radio-group>
+    <br/>
+    <h3>Tips</h3>
+    <p>
+      You can use the tooltip to save the game state when you select a larger grid size.
+    </p>
+    <p>
+      The tooltip can kind of work like an eraser.
+      It toggles the live or dead state of each highlighted cell when you click.
+    </p>
   </div>
   
 </div>

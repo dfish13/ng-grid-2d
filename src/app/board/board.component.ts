@@ -1,14 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { MatSliderChange } from '@angular/material/slider';
+import { MatRadioChange } from '@angular/material/radio';
 import { fromEvent } from 'rxjs';
-
-
-const toolTipOptions = [
-  [[0, 0]],
-  [[2,0],[2,1],[2,2],[1,2],[0,1]],
-  [[0,0],[0,1],[0,2],[1,2],[1,1],[1,0],[2,0],[2,1],[2,2],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3]],
-  [[0,4],[0,5],[1,5],[1,4],[10,4],[10,5],[10,6],[11,3],[11,7],[12,2],[12,8],[13,2],[13,8],[14,5],[15,3],[15,7],[16,6],[16,5],[16,4],[17,5],[20,4],[21,4],[20,3],[21,3],[20,2],[21,2],[22,1],[22,5],[24,5],[24,6],[24,0],[24,1],[34,2],[35,2],[35,3],[34,3]],
-  [[2,3],[1,4],[2,2],[0,4],[2,0],[2,1],[2,4],[0,3],[1,0],[1,1],[1,2],[1,5],[3,1],[3,2],[3,3]]
-]
 
 @Component({
   selector: 'game-board',
@@ -21,8 +14,8 @@ export class BoardComponent implements OnInit {
 
   @ViewChild('canvas', {static: true}) canvas: ElementRef;
   ctx: CanvasRenderingContext2D;
-  tileSize: number = 2;
-  gridSize: number = 300;
+  tileSize: number = 6;
+  gridSize: number = 100;
   liveTiles: Tile[];
   tiles: number[][];
   stepNum: number;
@@ -31,6 +24,10 @@ export class BoardComponent implements OnInit {
   highlightedTiles: number[][];
   toolTip: ToolTip;
   toolTipOffsets: number[][];
+
+  // From angular material default indigo-pink theme.
+  primary: string = '#3F51B5';
+  accent: string = '#FF4081';
   
   ngOnInit(): void {
     this.initBoard();
@@ -40,7 +37,7 @@ export class BoardComponent implements OnInit {
     this.ctx = this.canvas.nativeElement.getContext('2d');
     this.ctx.canvas.width = this.gridSize * this.tileSize;
     this.ctx.canvas.height = this.gridSize * this.tileSize;
-    this.ctx.fillStyle = '#444';
+    this.ctx.fillStyle = this.primary;
     this.stepNum = 0;
     this.stepTime = 5;
     this.liveTiles = [];
@@ -55,7 +52,7 @@ export class BoardComponent implements OnInit {
   @HostListener('window:keydown', ['$event'])
   keyEvent(event: KeyboardEvent) {
     const funcs = {
-      ' ': this.toolTip.reflect.bind(this.toolTip),
+      'a': this.toolTip.reflect.bind(this.toolTip),
       'w': this.toolTip.next.bind(this.toolTip),
       's': this.toolTip.prev.bind(this.toolTip),
       'd': this.toolTip.rotate.bind(this.toolTip)
@@ -79,7 +76,7 @@ export class BoardComponent implements OnInit {
 
   drawHighlight(i: number, j: number) {
     this.clearHighlight()
-    this.ctx.fillStyle = "#369"
+    this.ctx.fillStyle = this.accent
     for (var o of this.toolTip.getArr()) {
       const a = i - o[0]
       const b = j - o[1]
@@ -88,7 +85,7 @@ export class BoardComponent implements OnInit {
         this.highlightedTiles.push([a, b])
       }
     }
-    this.ctx.fillStyle = "#444"
+    this.ctx.fillStyle = this.primary
   }
 
   canvasCoords(e: MouseEvent) {
@@ -140,10 +137,10 @@ export class BoardComponent implements OnInit {
     this.ctx.clearRect(0, 0, this.gridSize * this.tileSize, this.gridSize * this.tileSize)
     for (var tile of this.liveTiles)
       tile.draw(this.ctx);
-    this.ctx.fillStyle = "#369"
+    this.ctx.fillStyle = this.accent
     for (var [i, j] of this.highlightedTiles)
       this.ctx.fillRect(i * this.tileSize, j * this.tileSize, this.tileSize, this.tileSize)
-    this.ctx.fillStyle = "#444"
+    this.ctx.fillStyle = this.primary
   }
   
   evolve() {
@@ -216,7 +213,7 @@ export class BoardComponent implements OnInit {
       this.interval.start()
   }
 
-  logTiles() {
+  saveTooltip() {
     let left = Number.MAX_SAFE_INTEGER
     let top = Number.MAX_SAFE_INTEGER
     let right = Number.MIN_SAFE_INTEGER
@@ -230,17 +227,48 @@ export class BoardComponent implements OnInit {
     }
 
     let tiles = []
-    console.log([right - left + 1, bottom - top + 1])
     for (var t of this.liveTiles)
       tiles.push([t.i - left, t.j - top])
-    console.log(JSON.stringify(tiles))
+    this.toolTip.add({
+      d: [right - left + 1, bottom - top + 1],
+      arr: tiles
+    })
   }
+
+  deleteTooltip() {
+    this.toolTip.delete();
+  }
+
+  formatLabel(value: number) {
+    return `${value}/s`;
+  }
+
+  onSliderValueChange(e: MatSliderChange) {
+    this.interval.updateMilliseconds(Math.round(1000 / e.value))
+  }
+
+  onGridSizeChange(e: MatRadioChange) {
+    if (this.interval.isRunning) {
+      this.interval.stop()
+    }
+    const v = Number(e.value);
+    this.gridSize = v;
+    this.tileSize = Math.round(600 / v);
+    this.reset();
+  }
+
+
 
 }
 
+interface ToolTipOption {
+  d: number[],
+  arr: number[][]
+};
+
 class ToolTip {
 
-  private static readonly defaultOptions = [
+  private static readonly defaultOptions: ToolTipOption[] = [
     {
       d: [1, 1],
       arr: [[0, 0]]
@@ -250,8 +278,8 @@ class ToolTip {
       arr: [[2,0],[2,1],[2,2],[1,2],[0,1]]
     },
     {
-      d: [4, 4],
-      arr: [[0,0],[0,1],[0,2],[1,2],[1,1],[1,0],[2,0],[2,1],[2,2],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3]]
+      d: [3, 8],
+      arr: [[1,2],[1,5],[0,1],[0,6],[1,0],[1,3],[1,4],[1,7],[2,1],[2,6],[0,0],[0,2],[0,3],[0,4],[0,5],[0,7],[2,0],[2,2],[2,3],[2,4],[2,5],[2,7]]
     },
     {
       d: [36, 9],
@@ -309,6 +337,15 @@ class ToolTip {
       newArr.push([w - (o[0] + 1), o[1]])
     this.options[this.i].arr = newArr
   }
+
+  add(option: ToolTipOption) {
+    this.options.push(option);
+  }
+
+  delete() {
+    this.options.splice(this.i, 1)
+    this.i = this.i % this.options.length;
+  }
 }
 
 class Interval {
@@ -336,6 +373,14 @@ class Interval {
     if (this.running)
       clearInterval(this.id)
     this.running = false
+  }
+
+  updateMilliseconds(ms: number) {
+    this.ms = ms
+    if (this.running) {
+      clearInterval(this.id)
+      this.id = setInterval(this.fn, this.ms)
+    }
   }
 
 }

@@ -1,14 +1,29 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$my-palette: mat.define-palette(mat.$indigo-palette);
+
+
 canvas {
   border-style: solid;
   border-radius: 5px;
   border-width: 2px;
-  border-color: #369;
+  border-color: mat.get-color-from-palette($my-palette, 'default');
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 620px 120px;
+  grid-template-columns: 620px 200px;
   grid-template-rows: auto;
+  justify-content: center;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .right-column {
@@ -17,17 +32,13 @@ canvas {
   justify-content: flex-start;
 }
 
-.my-button {
-  padding: .5rem 1.5rem;
-  font-size: 1rem;
-  margin-bottom: 2rem;
+.mat-button-base {
+  margin: 8px 8px 8px 0; 
+  width: 80px;
+  text-align: center;
 }
 
-// Using not modifier and disable attr selector to make sure disabled buttons do not
-// Change color when hovered over.
-.my-button:not([disabled]) {
-  &:hover {
-    color: white;
-    background-color: #42545C;
-  }
+.radio-group-base {
+  display: flex;
+  flex-direction: column;
 }
