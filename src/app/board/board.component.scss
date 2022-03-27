@@ -4,6 +4,8 @@ canvas {
   border-radius: 5px;
   border-width: 2px;
   border-color: #3f51b5;
+  height: 600px;
+  width: 600px;
 }
 
 .grid {
@@ -37,4 +39,17 @@ canvas {
 .radio-group-base {
   display: flex;
   flex-direction: column;
+}
+
+ul {
+  padding-left: 16px;
+  margin: 0 0;
+}
+
+li {
+  margin-bottom: 8px;
+}
+
+mat-radio-button {
+  margin-bottom: 8px;
 }
